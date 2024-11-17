@@ -1,7 +1,7 @@
 const TelegramBot = require('node-telegram-bot-api');
 
 const token = '7869608758:AAG1XY_1Md3MzoFBcG-uK56wSt8zs1Z656s'
-
+const webAppUrl = 'https://ya.ru'
 const bot = new TelegramBot(token, {polling: true});
 
 
@@ -14,6 +14,14 @@ bot.on('message', async (msg) => {
             reply_markup: {
                 keyboard: [
                     [{text: 'Заполнить форму'}]
+                ]
+            }
+        })
+
+        await bot.sendMessage(chatId, 'Ниже появится кнопка, заполните форму', {
+            reply_markup: {
+                inline_keyboard: [
+                    [{text: 'Заполнить форму', web_app: {url: webAppUrl}}]
                 ]
             }
         })
