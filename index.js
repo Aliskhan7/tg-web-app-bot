@@ -1,8 +1,15 @@
 const TelegramBot = require('node-telegram-bot-api');
+const express = require('express');
+const cors = require('cors');
 
 const token = '7869608758:AAG1XY_1Md3MzoFBcG-uK56wSt8zs1Z656s'
-const webAppUrl = 'https://ya.ru'
+const webAppUrl = 'https://thriving-chaja-270138.netlify.app'
 const bot = new TelegramBot(token, {polling: true});
+
+const app = express();
+
+app.use(express.json())
+app.use(cors());
 
 
 bot.on('message', async (msg) => {
@@ -10,21 +17,63 @@ bot.on('message', async (msg) => {
     const text = msg.text;
 
     if(text=== '/start'){
-        await bot.sendMessage(chatId, 'Ниже появится кнопка, заполните форму', {
+        await bot.sendMessage(chatId, 'Ниже появится кнопка, заполните форму' , {
             reply_markup: {
                 keyboard: [
-                    [{text: 'Заполнить форму'}]
+                    [{text: 'Заполнить форму', web_app: {url: webAppUrl + '/form'}}]
                 ]
             }
         })
 
-        await bot.sendMessage(chatId, 'Ниже появится кнопка, заполните форму', {
+        await bot.sendMessage(chatId, 'Заходи в наш интернет магазин по кнопке ниже', {
             reply_markup: {
                 inline_keyboard: [
-                    [{text: 'Заполнить форму', web_app: {url: webAppUrl}}]
+                    [{text: 'Сделать заказ', web_app: {url: webAppUrl}}]
                 ]
             }
         })
     }
 
+    if(msg?.web_app_data?.data){
+        try{
+            const data = JSON.parse(msg?.web_app_data?.data)
+
+            await bot.sendMessage(chatId,'Спасибо за обратную связь')
+            await bot.sendMessage(chatId,'Ваша страна: ' + data?.country)
+            await bot.sendMessage(chatId,'Ваша улица: ' + data?.street)
+
+            setTimeout(async () =>{
+                await bot.sendMessage(chatId,'Всю информацию вы получите в этом чате')
+            }, 3000)
+        }catch (e){
+            console.log(e)
+        }
+    }
+
 });
+
+app.post('/web-data',  async (req, res) => {
+    const {queryId, products, totalPrice} = req.body
+
+    try{
+        await bot.answerWebAppQuery(queryId, {
+            type: 'arctivle',
+            id: queryId,
+            title: 'Успешная покупка',
+            input_message_content: {message_text: 'Поздравляю с покупкой, вы приобрели товар на сумму ' + totalPrice},
+        })
+        return res.status(200).json({})
+    }catch(err){
+        await bot.answerWebAppQuery(queryId, {
+            type: 'arctivle',
+            id: queryId,
+            title: 'Не удалось приобрести товар',
+            input_message_content: {message_text: 'Не удалось приобрести товар'},
+        })
+        return res.status(500).json({})
+    }
+
+})
+
+const port = 8000
+app.listen(port, () => console.log(`Listening on port ${port}`));
